@@ -521,10 +521,10 @@
 			                                       *   belongs to the HID class.
 			                                       */
 			HID_CSCP_NonBootSubclass      = 0x00, /**< Descriptor Subclass value indicating that the device or interface
-			                                       *   does not implement a HID boot protocol.
+			                                       *   does not implement a HID boot protocol.  (0x00)
 			                                       */
 			HID_CSCP_BootSubclass         = 0x01, /**< Descriptor Subclass value indicating that the device or interface
-			                                       *   implements a HID boot protocol.
+			                                       *   implements a HID boot protocol.  (0x01)
 			                                       */
 			HID_CSCP_NonBootProtocol      = 0x00, /**< Descriptor Protocol value indicating that the device or interface
 			                                       *   does not belong to a HID boot protocol.

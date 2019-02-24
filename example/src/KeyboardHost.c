@@ -192,6 +192,8 @@ void EVENT_USB_Host_DeviceEnumerationComplete(const uint8_t corenum)
 		return;
 	}
 
+	printf("Interface!!: %d\r\n", Keyboard_HID_Interface.State.InterfaceNumber);
+
 	if (HID_Host_SetBootProtocol(&Keyboard_HID_Interface) != 0) {
 		DEBUGOUT("Could not Set Boot Protocol Mode.\r\n");
 

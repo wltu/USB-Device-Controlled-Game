@@ -257,17 +257,27 @@ HCD_STATUS HcdControlTransfer(uint32_t PipeHandle,
 {
 	uint8_t HostID, EdIdx;
 
+	printf("XXXX: 1\r\n");
+
 	if ((pDeviceRequest == NULL) || (buffer == NULL)) {
 		ASSERT_STATUS_OK_MESSAGE(HCD_STATUS_PARAMETER_INVALID, "Device Request or Data Buffer is NULL");
 	}
 
+	printf("XXXX: 2\r\n");
+
 	ASSERT_STATUS_OK(PipehandleParse(PipeHandle, &HostID, &EdIdx) );
+
+
+	printf("XXXX: 3\r\n");
 
 	/************************************************************************/
 	/* Setup Stage                                                          */
 	/************************************************************************/
 
 	ASSERT_STATUS_OK(QueueOneGTD(EdIdx, (uint8_t *) pDeviceRequest, 8, 0, 2, 0) );			/* Setup TD: DirectionPID=00 - DataToggle=10b (always DATA0) */
+
+
+	printf("XXXX: 4\r\n");
 
 	/************************************************************************/
 	/* Data Stage                                                           */
@@ -277,11 +287,20 @@ HCD_STATUS HcdControlTransfer(uint32_t PipeHandle,
 		ASSERT_STATUS_OK(QueueOneGTD(EdIdx, buffer, pDeviceRequest->wLength,
 									 (pDeviceRequest->bmRequestType & 0x80) ? 2 : 1, 3, 0) );											/* DataToggle=11b (always DATA1) */
 	}
+
+
+	printf("XXXX: 5\r\n");
+
 	/************************************************************************/
 	/* Status Stage                                                                     */
 	/************************************************************************/
 
 	ASSERT_STATUS_OK(QueueOneGTD(EdIdx, NULL, 0, (pDeviceRequest->bmRequestType & 0x80) ? 1 : 2, 3, 1) );	/* Status TD: Direction=opposite of data direction - DataToggle=11b (always DATA1) */
+
+
+
+	printf("XXXX: 6\r\n");
+
 
 	/* set control list filled */
 	USB_REG(HostID)->CommandStatus |= HC_COMMAND_STATUS_ControlListFilled;
@@ -291,6 +310,10 @@ HCD_STATUS HcdControlTransfer(uint32_t PipeHandle,
 	/* wait for semaphore compete TDs */
 
 	ASSERT_STATUS_OK(WaitForTransferComplete(EdIdx) );
+
+
+
+	printf("XXXX: 7\r\n");
 
 	return HCD_STATUS_OK;
 }

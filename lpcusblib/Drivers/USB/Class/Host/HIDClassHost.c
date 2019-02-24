@@ -73,7 +73,7 @@ uint8_t HID_Host_ConfigurePipes(USB_ClassInfo_HID_Host_t* const HIDInterfaceInfo
 				                                                          USB_Descriptor_Configuration_Header_t);
 				 printf("ConfigHeader Ptr: %d\r", ConfigHeaderPtr);
 				 printf("ConfigHeader: %d\r", ConfigHeaderPtr[0]);
-				printf("Info: %d\r", &ConfigDescriptorData[0]);
+				 printf("Info: %d\r", &ConfigDescriptorData[0]);
 
 				if (USB_GetNextDescriptorComp(&ConfigDescriptorSize, &ConfigDescriptorData,
 				                              DCOMP_HID_Host_NextHIDInterface) != DESCRIPTOR_SEARCH_COMP_Found)
@@ -85,6 +85,7 @@ uint8_t HID_Host_ConfigurePipes(USB_ClassInfo_HID_Host_t* const HIDInterfaceInfo
 				HIDInterface = DESCRIPTOR_PCAST(ConfigDescriptorData, USB_Descriptor_Interface_t);
 
 				printf(("Value 1: %d \t Value 2: %d \r\n"),HIDInterface->Protocol, HIDInterfaceInfo->Config.HIDInterfaceProtocol);
+				printf(("Value 3: %d \t Value 4: %d \r\n"),HIDInterface->SubClass, HIDInterface->InterfaceNumber);
 			} while (HIDInterfaceInfo->Config.HIDInterfaceProtocol &&
 					 (HIDInterface->Protocol != HIDInterfaceInfo->Config.HIDInterfaceProtocol));
 
@@ -162,6 +163,8 @@ uint8_t HID_Host_ConfigurePipes(USB_ClassInfo_HID_Host_t* const HIDInterfaceInfo
 		  Pipe_SetInterruptPeriod(InterruptPeriod);
 	}
 
+
+	printf("Interface Number: %d\r\n", HIDInterface->InterfaceNumber);
 	HIDInterfaceInfo->State.InterfaceNumber      = HIDInterface->InterfaceNumber;
 	HIDInterfaceInfo->State.HIDReportSize        = LE16_TO_CPU(HIDDescriptor->HIDReportLength);
 	HIDInterfaceInfo->State.SupportsBootProtocol = (HIDInterface->SubClass != HID_CSCP_NonBootProtocol);
@@ -375,7 +378,7 @@ uint8_t HID_Host_SetBootProtocol(USB_ClassInfo_HID_Host_t* const HIDInterfaceInf
 
 	if ((ErrorCode = USB_Host_SendControlRequest(portnum,NULL)) != HOST_SENDCONTROL_Successful){
 		printf("Error Code: %d\r", ErrorCode);
-	  return ErrorCode;
+		return ErrorCode;
 	}
 
 	HIDInterfaceInfo->State.LargestReportSize = 8;
