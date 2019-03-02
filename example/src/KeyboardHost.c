@@ -41,17 +41,13 @@
  *  within a device can be differentiated from one another.
  */
 static USB_ClassInfo_HID_Host_t Keyboard_HID_Interface = {
-	.Config = {
-		.DataINPipeNumber       = 1,
-		.DataINPipeDoubleBank   = false,
+		.Config =
+				{ .DataINPipeNumber = 1, .DataINPipeDoubleBank = false,
 
-		.DataOUTPipeNumber      = 2,
-		.DataOUTPipeDoubleBank  = false,
+				.DataOUTPipeNumber = 2, .DataOUTPipeDoubleBank = false,
 
-		.HIDInterfaceProtocol   = HID_CSCP_KeyboardBootProtocol,
-		.PortNumber = 0,
-	},
-};
+				.HIDInterfaceProtocol = HID_CSCP_MouseBootProtocol,
+						.PortNumber = 0, }, };
 
 /*****************************************************************************
  * Public types/enumerations/variables
@@ -62,52 +58,27 @@ static USB_ClassInfo_HID_Host_t Keyboard_HID_Interface = {
  ****************************************************************************/
 
 /* Keyboard management task */
-static void KeyboardHost_Task(void)
-{
+static void KeyboardHost_Task(void) {
 	uint8_t KeyCode;
 
-	if (USB_HostState[Keyboard_HID_Interface.Config.PortNumber] != HOST_STATE_Configured) {
+	if (USB_HostState[Keyboard_HID_Interface.Config.PortNumber]
+			!= HOST_STATE_Configured) {
 		//printf("DataOUTPipeDoubleBank: %d\r\n", Keyboard_HID_Interface.Config.HIDInterfaceProtocol);
 		return;
 	}
 
 	if (HID_Host_IsReportReceived(&Keyboard_HID_Interface)) {
-		USB_KeyboardReport_Data_t KeyboardReport;
-		HID_Host_ReceiveReport(&Keyboard_HID_Interface, &KeyboardReport);
+		USB_MouseReport_Data_t MouseReport;
+		HID_Host_ReceiveReport(&Keyboard_HID_Interface, &MouseReport);
 
-		KeyCode = KeyboardReport.KeyCode[0];
+		printf("Button: %d\tX: %d\t Y: %d\r", MouseReport.Button, MouseReport.X,
+				MouseReport.Y);
 
-		if (KeyCode) {
-			char PressedKey = 0;
-
-			/* Retrieve pressed key character if alphanumeric */
-			if ((KeyCode >= HID_KEYBOARD_SC_A) && (KeyCode <= HID_KEYBOARD_SC_Z)) {
-				PressedKey = (KeyCode - HID_KEYBOARD_SC_A) + 'A';
-			}
-			else if ((KeyCode >= HID_KEYBOARD_SC_1_AND_EXCLAMATION) &
-					 (KeyCode  < HID_KEYBOARD_SC_0_AND_CLOSING_PARENTHESIS)) {
-				PressedKey = (KeyCode - HID_KEYBOARD_SC_1_AND_EXCLAMATION) + '1';
-			}
-			else if (KeyCode == HID_KEYBOARD_SC_0_AND_CLOSING_PARENTHESIS) {
-				PressedKey = '0';
-			}
-			else if (KeyCode == HID_KEYBOARD_SC_SPACE) {
-				PressedKey = ' ';
-			}
-			else if (KeyCode == HID_KEYBOARD_SC_ENTER) {
-				PressedKey = '\n';
-			}
-
-			if (PressedKey) {
-				putchar(PressedKey);
-			}
-		}
 	}
 }
 
 /* Configures the board hardware and chip peripherals for the demo's functionality */
-static void SetupHardware(void)
-{
+static void SetupHardware(void) {
 	SystemCoreClockUpdate();
 	Board_Init();
 	Chip_USB_Init();
@@ -126,13 +97,12 @@ static void SetupHardware(void)
  * @note	This routine configures the hardware required by the application,
  * then enters a loop to run the application tasks in sequence.
  */
-int main(void)
-{
- 	SetupHardware();
+int main(void) {
+	SetupHardware();
 
 	DEBUGOUT("Keyboard Host Demo running.\r\n");
 
-	for (;; ) {
+	for (;;) {
 		KeyboardHost_Task();
 
 		HID_Host_USBTask(&Keyboard_HID_Interface);
@@ -141,52 +111,44 @@ int main(void)
 }
 
 /* This indicates that a device has been attached to the host,
-   and starts the library USB task to begin the enumeration and USB
-   management process. */
-void EVENT_USB_Host_DeviceAttached(const uint8_t corenum)
-{
+ and starts the library USB task to begin the enumeration and USB
+ management process. */
+void EVENT_USB_Host_DeviceAttached(const uint8_t corenum) {
 	DEBUGOUT(("Device Attached on port %d\r\n"), corenum);
 }
 
 /* This indicates that a device has been removed from the host,
-   and stops the library USB task management process. */
-void EVENT_USB_Host_DeviceUnattached(const uint8_t corenum)
-{
+ and stops the library USB task management process. */
+void EVENT_USB_Host_DeviceUnattached(const uint8_t corenum) {
 	DEBUGOUT(("\r\nDevice Unattached on port %d\r\n"), corenum);
 }
 
 /* This indicates that a device has been successfully
-   enumerated by the host and is now ready to be used by the
-   application. */
-void EVENT_USB_Host_DeviceEnumerationComplete(const uint8_t corenum)
-{
-	uint16_t ConfigDescriptorSize;
-	uint8_t  ConfigDescriptorData[512];
-	/*char c[512];
-	sprintf(c, "%d", ConfigDescriptorData);
+ enumerated by the host and is now ready to be used by the
+ application. */
+void EVENT_USB_Host_DeviceEnumerationComplete(const uint8_t corenum) {
 
-	printf("This is the data:");
-	for(int i = 0; i < 512; i++){
-		printf("%d",ConfigDescriptorData[i]);
-	}
-	printf("\r\n");*/
-	//sprintf("ConfigDescriptorData")
-	if (USB_Host_GetDeviceConfigDescriptor(corenum, 1, &ConfigDescriptorSize, ConfigDescriptorData,
-										   sizeof(ConfigDescriptorData)) != HOST_GETCONFIG_Successful) {
+	uint16_t ConfigDescriptorSize;
+	uint8_t ConfigDescriptorData[512];
+	if (USB_Host_GetDeviceConfigDescriptor(corenum, 1, &ConfigDescriptorSize,
+			ConfigDescriptorData, sizeof(ConfigDescriptorData))
+			!= HOST_GETCONFIG_Successful) {
 		DEBUGOUT("Error Retrieving Configuration Descriptor.\r\n");
 
 		return;
 	}
 
 	Keyboard_HID_Interface.Config.PortNumber = corenum;
-	if (HID_Host_ConfigurePipes(&Keyboard_HID_Interface,
-								ConfigDescriptorSize, ConfigDescriptorData) != HID_ENUMERROR_NoError) {
+	if (HID_Host_ConfigurePipes(&Keyboard_HID_Interface, ConfigDescriptorSize,
+			ConfigDescriptorData) != HID_ENUMERROR_NoError) {
 		DEBUGOUT("Attached Device Not a Valid Keyboard.\r\n");
 
 		return;
 	}
 
-	if (USB_Host_SetDeviceConfiguration(Keyboard_HID_Interface.Config.PortNumber, 1) != HOST_SENDCONTROL_Successful) {
+	if (USB_Host_SetDeviceConfiguration(
+			Keyboard_HID_Interface.Config.PortNumber, 1)
+			!= HOST_SENDCONTROL_Successful) {
 		DEBUGOUT("Error Setting Device Configuration.\r\n");
 
 		return;
@@ -197,42 +159,68 @@ void EVENT_USB_Host_DeviceEnumerationComplete(const uint8_t corenum)
 	if (HID_Host_SetBootProtocol(&Keyboard_HID_Interface) != 0) {
 		DEBUGOUT("Could not Set Boot Protocol Mode.\r\n");
 
-		USB_Host_SetDeviceConfiguration(Keyboard_HID_Interface.Config.PortNumber, 0);
+		USB_Host_SetDeviceConfiguration(
+				Keyboard_HID_Interface.Config.PortNumber, 0);
 		return;
 	}
 
 	DEBUGOUT("Keyboard Enumerated.\r\n");
 }
 
+void GetDescriptor(int portnum) {
+
+	printf("Hello?\r");
+	uint8_t ConfigHeader[sizeof(XIDDescriptor)];
+	XIDDescriptor *pCfgHeader = (XIDDescriptor*) ConfigHeader;
+
+	USB_ControlRequest = (USB_Request_Header_t )
+			{ .bmRequestType = 128, .bRequest = 1, .wValue = 0x0200,
+					.wIndex = 0, .wLength = 16, };
+
+	printf("Hello?\r");
+	Pipe_SelectPipe(portnum, PIPE_CONTROLPIPE);
+	printf("Hello?\r");
+	int ErrorCode = 0;
+	if ((ErrorCode = USB_Host_SendControlRequest(portnum, ConfigHeader))
+			!= HOST_SENDCONTROL_Successful) {
+		printf("Failed with Error Code: %d\r", ErrorCode);
+	}
+
+	printf("Hello?\r");
+	printf("Descriptor type: %d\r", pCfgHeader->bDescriptorType);
+	printf("Type: %d\r", pCfgHeader->bType);
+	printf("Sub type: %d\r", pCfgHeader->bSubType);
+	printf("Length: %d\r", pCfgHeader->bLength);
+
+}
+
 /* This indicates that a hardware error occurred while in host mode. */
-void EVENT_USB_Host_HostError(const uint8_t corenum, const uint8_t ErrorCode)
-{
+void EVENT_USB_Host_HostError(const uint8_t corenum, const uint8_t ErrorCode) {
 	USB_Disable(corenum, USB_MODE_Host);
 
 	DEBUGOUT(("Host Mode Error\r\n"
-			  " -- Error port %d\r\n"
-			  " -- Error Code %d\r\n" ), corenum, ErrorCode);
+			" -- Error port %d\r\n"
+			" -- Error Code %d\r\n"), corenum, ErrorCode);
 
 	/* Wait forever */
-	for (;; ) {}
+	for (;;) {
+	}
 }
 
 /* This indicates that a problem occurred while enumerating an
-   attached USB device. */
+ attached USB device. */
 void EVENT_USB_Host_DeviceEnumerationFailed(const uint8_t corenum,
-											const uint8_t ErrorCode,
-											const uint8_t SubErrorCode)
-{
+		const uint8_t ErrorCode, const uint8_t SubErrorCode) {
 	DEBUGOUT(("Dev Enum Error\r\n"
-			  " -- Error port %d\r\n"
-			  " -- Error Code %d\r\n"
-			  " -- Sub Error Code %d\r\n"
-			  " -- In State %d\r\n" ),
-			 corenum, ErrorCode, SubErrorCode, USB_HostState[corenum]);
+			" -- Error port %d\r\n"
+			" -- Error Code %d\r\n"
+			" -- Sub Error Code %d\r\n"
+			" -- In State %d\r\n"), corenum, ErrorCode, SubErrorCode,
+			USB_HostState[corenum]);
 }
 
 /* Dummy callback function for HID Parser */
-bool CALLBACK_HIDParser_FilterHIDReportItem(HID_ReportItem_t *const CurrentItem)
-{
+bool CALLBACK_HIDParser_FilterHIDReportItem(
+		HID_ReportItem_t * const CurrentItem) {
 	return true;
 }
