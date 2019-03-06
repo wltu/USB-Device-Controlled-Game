@@ -517,19 +517,19 @@
 		 */
 		enum HID_Descriptor_ClassSubclassProtocol_t
 		{
-			HID_CSCP_HIDClass             = 0xFF, /** (0x03)< Descriptor Class value indicating that the device or interface
+			HID_CSCP_HIDClass             = 0x03, /**< Descriptor Class value indicating that the device or interface
 			                                       *   belongs to the HID class.
 			                                       */
 			HID_CSCP_NonBootSubclass      = 0x00, /**< Descriptor Subclass value indicating that the device or interface
-			                                       *   does not implement a HID boot protocol.  (0x00)
+			                                       *   does not implement a HID boot protocol.
 			                                       */
 			HID_CSCP_BootSubclass         = 0x01, /**< Descriptor Subclass value indicating that the device or interface
-			                                       *   implements a HID boot protocol.  (0x01)
+			                                       *   implements a HID boot protocol.
 			                                       */
 			HID_CSCP_NonBootProtocol      = 0x00, /**< Descriptor Protocol value indicating that the device or interface
 			                                       *   does not belong to a HID boot protocol.
 			                                       */
-			HID_CSCP_KeyboardBootProtocol = 0xD0, /**< Descriptor Protocol value indicating that the device or interface
+			HID_CSCP_KeyboardBootProtocol = 0x01, /**< Descriptor Protocol value indicating that the device or interface
 			                                       *   belongs to the Keyboard HID boot protocol.
 			                                       */
 			HID_CSCP_MouseBootProtocol    = 0x02, /**< Descriptor Protocol value indicating that the device or interface
@@ -551,7 +551,7 @@
 		/** Enum for the HID class specific descriptor types. */
 		enum HID_DescriptorTypes_t
 		{
-			HID_DTYPE_HID           = 0x05, /**(0x21)< Descriptor header type value, to indicate a HID class HID descriptor. */
+			HID_DTYPE_HID           = 0x21, /**< Descriptor header type value, to indicate a HID class HID descriptor. */
 			HID_DTYPE_Report        = 0x22, /**< Descriptor header type value, to indicate a HID class HID report descriptor. */
 		};
 

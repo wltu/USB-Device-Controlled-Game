@@ -55,7 +55,7 @@ uint8_t USB_Host_SendControlRequest(const uint8_t corenum, void* const BufferPtr
 
 	ret = (uint8_t)HcdControlTransfer(PipeInfo[corenum][pipeselected[corenum]].PipeHandle, &USB_ControlRequest,
 					   PipeInfo[corenum][pipeselected[corenum]].Buffer);
-	printf("ret: %d\r",ret);
+
 	if(ret == (uint8_t)HOST_SENDCONTROL_Successful)
 	{
 		if ((USB_ControlRequest.bmRequestType & CONTROL_REQTYPE_DIRECTION) == REQDIR_DEVICETOHOST)

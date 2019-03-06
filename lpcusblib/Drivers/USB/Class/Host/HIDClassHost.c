@@ -49,13 +49,11 @@ uint8_t HID_Host_ConfigurePipes(USB_ClassInfo_HID_Host_t* const HIDInterfaceInfo
 	USB_Descriptor_Interface_t* HIDInterface    = NULL;
 	USB_HID_Descriptor_HID_t*   HIDDescriptor   = NULL;
 	uint8_t portnum = HIDInterfaceInfo->Config.PortNumber;
-	printf("portnum: %d\r", portnum);
+
 	memset(&HIDInterfaceInfo->State, 0x00, sizeof(HIDInterfaceInfo->State));
 
-	if (DESCRIPTOR_TYPE(ConfigDescriptorData) != DTYPE_Configuration){
-		printf("error 1");
+	if (DESCRIPTOR_TYPE(ConfigDescriptorData) != DTYPE_Configuration)
 	  return HID_ENUMERROR_InvalidConfigDescriptor;
-	}
 
 	while (!(DataINEndpoint) || !(DataOUTEndpoint))
 	{
@@ -68,31 +66,19 @@ uint8_t HID_Host_ConfigurePipes(USB_ClassInfo_HID_Host_t* const HIDInterfaceInfo
 
 			do
 			{
-				 uint8_t* CurrDescriptor = &ConfigDescriptorData[0]; // Pointing to the configuration header
-				 USB_Descriptor_Configuration_Header_t* ConfigHeaderPtr = DESCRIPTOR_PCAST(CurrDescriptor,
-				                                                          USB_Descriptor_Configuration_Header_t);
-				 printf("ConfigHeader Ptr: %d\r", ConfigHeaderPtr);
-				 printf("ConfigHeader: %d\r", ConfigHeaderPtr[0]);
-				 printf("Info: %d\r", &ConfigDescriptorData[0]);
-
 				if (USB_GetNextDescriptorComp(&ConfigDescriptorSize, &ConfigDescriptorData,
 				                              DCOMP_HID_Host_NextHIDInterface) != DESCRIPTOR_SEARCH_COMP_Found)
 				{
-					printf("error 2\r");
 					return HID_ENUMERROR_NoCompatibleInterfaceFound;
 				}
 
 				HIDInterface = DESCRIPTOR_PCAST(ConfigDescriptorData, USB_Descriptor_Interface_t);
-
-				printf(("Value 1: %d \t Value 2: %d \r\n"),HIDInterface->Protocol, HIDInterfaceInfo->Config.HIDInterfaceProtocol);
-				printf(("Value 3: %d \t Value 4: %d \r\n"),HIDInterface->SubClass, HIDInterface->InterfaceNumber);
 			} while (HIDInterfaceInfo->Config.HIDInterfaceProtocol &&
 					 (HIDInterface->Protocol != HIDInterfaceInfo->Config.HIDInterfaceProtocol));
 
 			if (USB_GetNextDescriptorComp(&ConfigDescriptorSize, &ConfigDescriptorData,
 			                              DCOMP_HID_Host_NextHIDDescriptor) != DESCRIPTOR_SEARCH_COMP_Found)
 			{
-				printf("error 3");
 				return HID_ENUMERROR_NoCompatibleInterfaceFound;
 			}
 
@@ -155,7 +141,6 @@ uint8_t HID_Host_ConfigurePipes(USB_ClassInfo_HID_Host_t* const HIDInterfaceInfo
 		if (!(Pipe_ConfigurePipe(portnum,PipeNum, Type, Token, EndpointAddress, Size,
 		                         DoubleBanked ? PIPE_BANK_DOUBLE : PIPE_BANK_SINGLE)))
 		{
-			printf("error 4");
 			return HID_ENUMERROR_PipeConfigurationFailed;
 		}
 		
@@ -163,15 +148,12 @@ uint8_t HID_Host_ConfigurePipes(USB_ClassInfo_HID_Host_t* const HIDInterfaceInfo
 		  Pipe_SetInterruptPeriod(InterruptPeriod);
 	}
 
-
-	printf("Interface Number: %d\r\n", HIDInterface->InterfaceNumber);
 	HIDInterfaceInfo->State.InterfaceNumber      = HIDInterface->InterfaceNumber;
 	HIDInterfaceInfo->State.HIDReportSize        = LE16_TO_CPU(HIDDescriptor->HIDReportLength);
 	HIDInterfaceInfo->State.SupportsBootProtocol = (HIDInterface->SubClass != HID_CSCP_NonBootProtocol);
 	HIDInterfaceInfo->State.LargestReportSize    = 8;
 	HIDInterfaceInfo->State.IsActive             = true;
 
-	printf("Success\r\n");
 	return HID_ENUMERROR_NoError;
 }
 
@@ -182,7 +164,7 @@ static uint8_t DCOMP_HID_Host_NextHIDInterface(void* const CurrentDescriptor)
 	if (Header->Type == DTYPE_Interface)
 	{
 		USB_Descriptor_Interface_t* Interface = DESCRIPTOR_PCAST(CurrentDescriptor, USB_Descriptor_Interface_t);
-		printf("Interface: %d\r", Interface->Class);
+
 		if (Interface->Class == HID_CSCP_HIDClass)
 		  return DESCRIPTOR_SEARCH_Found;
 	}
@@ -194,7 +176,6 @@ static uint8_t DCOMP_HID_Host_NextHIDDescriptor(void* const CurrentDescriptor)
 {
 	USB_Descriptor_Header_t* Header = DESCRIPTOR_PCAST(CurrentDescriptor, USB_Descriptor_Header_t);
 
-	printf("Headers: %d\r",Header->Type);
 	if (Header->Type == HID_DTYPE_HID)
 	  return DESCRIPTOR_SEARCH_Found;
 	else if (Header->Type == DTYPE_Interface)
@@ -358,7 +339,6 @@ bool HID_Host_IsReportReceived(USB_ClassInfo_HID_Host_t* const HIDInterfaceInfo)
 
 uint8_t HID_Host_SetBootProtocol(USB_ClassInfo_HID_Host_t* const HIDInterfaceInfo)
 {
-	printf("\r\nStarting Boot Protocol...\r");
 	uint8_t ErrorCode;
 	uint8_t portnum = HIDInterfaceInfo->Config.PortNumber;
 
@@ -376,14 +356,12 @@ uint8_t HID_Host_SetBootProtocol(USB_ClassInfo_HID_Host_t* const HIDInterfaceInf
 
 	Pipe_SelectPipe(portnum,PIPE_CONTROLPIPE);
 
-	if ((ErrorCode = USB_Host_SendControlRequest(portnum,NULL)) != HOST_SENDCONTROL_Successful){
-		printf("Error Code: %d\r", ErrorCode);
-		return ErrorCode;
-	}
+	if ((ErrorCode = USB_Host_SendControlRequest(portnum,NULL)) != HOST_SENDCONTROL_Successful)
+	  return ErrorCode;
 
 	HIDInterfaceInfo->State.LargestReportSize = 8;
 	HIDInterfaceInfo->State.UsingBootProtocol = true;
-	printf("Success\r");
+
 	return HOST_SENDCONTROL_Successful;
 }
 

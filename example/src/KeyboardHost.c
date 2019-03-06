@@ -167,32 +167,32 @@ void EVENT_USB_Host_DeviceEnumerationComplete(const uint8_t corenum) {
 	DEBUGOUT("Keyboard Enumerated.\r\n");
 }
 
-void GetDescriptor(int portnum) {
-
-	printf("Hello?\r");
-	uint8_t ConfigHeader[sizeof(XIDDescriptor)];
-	XIDDescriptor *pCfgHeader = (XIDDescriptor*) ConfigHeader;
-
-	USB_ControlRequest = (USB_Request_Header_t )
-			{ .bmRequestType = 128, .bRequest = 1, .wValue = 0x0200,
-					.wIndex = 0, .wLength = 16, };
-
-	printf("Hello?\r");
-	Pipe_SelectPipe(portnum, PIPE_CONTROLPIPE);
-	printf("Hello?\r");
-	int ErrorCode = 0;
-	if ((ErrorCode = USB_Host_SendControlRequest(portnum, ConfigHeader))
-			!= HOST_SENDCONTROL_Successful) {
-		printf("Failed with Error Code: %d\r", ErrorCode);
-	}
-
-	printf("Hello?\r");
-	printf("Descriptor type: %d\r", pCfgHeader->bDescriptorType);
-	printf("Type: %d\r", pCfgHeader->bType);
-	printf("Sub type: %d\r", pCfgHeader->bSubType);
-	printf("Length: %d\r", pCfgHeader->bLength);
-
-}
+//void GetDescriptor(int portnum) {
+//
+//	printf("Hello?\r");
+//	uint8_t ConfigHeader[sizeof(XIDDescriptor)];
+//	XIDDescriptor *pCfgHeader = (XIDDescriptor*) ConfigHeader;
+//
+//	USB_ControlRequest = (USB_Request_Header_t )
+//			{ .bmRequestType = 128, .bRequest = 1, .wValue = 0x0200,
+//					.wIndex = 0, .wLength = 16, };
+//
+//	printf("Hello?\r");
+//	Pipe_SelectPipe(portnum, PIPE_CONTROLPIPE);
+//	printf("Hello?\r");
+//	int ErrorCode = 0;
+//	if ((ErrorCode = USB_Host_SendControlRequest(portnum, ConfigHeader))
+//			!= HOST_SENDCONTROL_Successful) {
+//		printf("Failed with Error Code: %d\r", ErrorCode);
+//	}
+//
+//	printf("Hello?\r");
+//	printf("Descriptor type: %d\r", pCfgHeader->bDescriptorType);
+//	printf("Type: %d\r", pCfgHeader->bType);
+//	printf("Sub type: %d\r", pCfgHeader->bSubType);
+//	printf("Length: %d\r", pCfgHeader->bLength);
+//
+//}
 
 /* This indicates that a hardware error occurred while in host mode. */
 void EVENT_USB_Host_HostError(const uint8_t corenum, const uint8_t ErrorCode) {
