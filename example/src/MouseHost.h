@@ -1,5 +1,5 @@
 /*
- * @brief Definitions and declarations of Keyboard Host Example
+ * @brief Definitions and declarations of Mouse Host
  *
  * @note
  * Copyright(C) NXP Semiconductors, 2012
@@ -30,8 +30,8 @@
  * this code.
  */
 
-#ifndef __KEYBOARD_HOST_H_
-#define __KEYBOARD_HOST_H_
+#ifndef __MOUSE_HOST_H_
+#define __MOUSE_HOST_H_
 
 #include "board.h"
 #include "USB.h"
@@ -40,27 +40,18 @@
 extern "C" {
 #endif
 
-/** @defgroup Keyboard_Host_18xx43xx Keyboard Host
+/** @defgroup Mouse_Host_18xx43xx Mouse Host
  * @ingroup EXAMPLES_USB_18XX43XX
- * <b>Example description</b><br>
- * This example implements a HID class host mode device that enumerates a HID
- * class device with keyboard report descriptors and displays key press
- * characters on a terminal. If the keyboard is enumerated and working pressing
- * "Space" key toggles the LED0, and pressing "ENTER" key toggles LED1.
- * NOTE: many keyboards enumerate as a HUB device which is not supported by
- * this example.
+ *
  *
  * When the example is first run the terminal window will display:
- * Keyboard Host Demo running.
+ * Mouse Host running.
  *
- * When the keyboard is plugged in the terminal window will display:
+ * When the moouse is plugged in the terminal window will display:
  * Device Attached.
- * Keyboard Enumerated.
+ * Mouse Enumerated.
  *
- * When a key is pressed on the keyboard an upper case character corresponding
- * to that key will be displayed in the terminal window.
- *
- * When the keyboard is unplugged the ternimal window will display:
+ * When the mouse is unplugged the terminal window will display:
  * Device Unattached.<br>
  *
  * <b>Special connection requirements</b><br>
@@ -88,27 +79,17 @@ extern "C" {
  * @}
  */
 
-/** @defgroup Keyboard_Host_17xx40xx Keyboard Host
+/** @defgroup Mouse_Host_17xx40xx Mouse Host
  * @ingroup EXAMPLES_USB_17XX40XX
- * <b>Example description</b><br>
- * This example implements a HID class host mode device that enumerates a HID
- * class device with keyboard report descriptors and displays key press
- * characters on a terminal. If the keyboard is enumerated and working pressing
- * "Space" key toggles the LED0, and pressing "ENTER" key toggles LED1.
- * NOTE: many keyboards enumerate as a HUB device which is not supported by
- * this example.
  *
  * When the example is first run the terminal window will display:
- * Keyboard Host Demo running.
+ * Mouse Host running.
  *
- * When the keyboard is plugged in the terminal window will display:
+ * When the mouse is plugged in the terminal window will display:
  * Device Attached.
- * Keyboard Enumerated.
+ * Mouse Enumerated.
  *
- * When a key is pressed on the keyboard an upper case character corresponding
- * to that key will be displayed in the terminal window.
- *
- * When the keyboard is unplugged the ternimal window will display:
+ * When the mouse is unplugged the terminal window will display:
  * Device Unattached.<br>
  *
  * <b>Special connection requirements</b><br>
@@ -133,8 +114,8 @@ extern "C" {
  * @}
  */
 
-/** @defgroup Keyboard_Host_Definition Main definitions
- * @ingroup Keyboard_Host_18xx43xx Keyboard_Host_17xx40xx
+/** @defgroup Mouse_Host_Definition Main definitions
+ * @ingroup Mouse_Host_18xx43xx Mouse_Host_17xx40xx
  * @{
  */
 
@@ -158,4 +139,4 @@ extern "C" {
 }
 #endif
 
-#endif /* __KEYBOARD_HOST_H_ */
+#endif /* __MOUSE_HOST_H_ */

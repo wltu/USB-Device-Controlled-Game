@@ -1,5 +1,5 @@
 /*
- * @brief Keyboard Host Example
+ * @brief Mouse Host
  *
  * @note
  * Copyright(C) NXP Semiconductors, 2012
@@ -30,7 +30,7 @@
  * this code.
  */
 
-#include "KeyboardHost.h"
+#include "MouseHost.h"
 
 /*****************************************************************************
  * Private types/enumerations/variables
@@ -40,7 +40,7 @@
  *  passed to all HID Class driver functions, so that multiple instances of the same class
  *  within a device can be differentiated from one another.
  */
-static USB_ClassInfo_HID_Host_t Keyboard_HID_Interface = {
+static USB_ClassInfo_HID_Host_t Mouse_HID_Interface = {
 		.Config =
 				{ .DataINPipeNumber = 1, .DataINPipeDoubleBank = false,
 
@@ -57,19 +57,18 @@ static USB_ClassInfo_HID_Host_t Keyboard_HID_Interface = {
  * Private functions
  ****************************************************************************/
 
-/* Keyboard management task */
-static void KeyboardHost_Task(void) {
-	uint8_t KeyCode;
+/* Mouse management task */
+static void MouseHost_Task(void) {
 
-	if (USB_HostState[Keyboard_HID_Interface.Config.PortNumber]
+	if (USB_HostState[Mouse_HID_Interface.Config.PortNumber]
 			!= HOST_STATE_Configured) {
-		//printf("DataOUTPipeDoubleBank: %d\r\n", Keyboard_HID_Interface.Config.HIDInterfaceProtocol);
+		//printf("DataOUTPipeDoubleBank: %d\r\n", Mouse_HID_Interface.Config.HIDInterfaceProtocol);
 		return;
 	}
 
-	if (HID_Host_IsReportReceived(&Keyboard_HID_Interface)) {
+	if (HID_Host_IsReportReceived(&Mouse_HID_Interface)) {
 		USB_MouseReport_Data_t MouseReport;
-		HID_Host_ReceiveReport(&Keyboard_HID_Interface, &MouseReport);
+		HID_Host_ReceiveReport(&Mouse_HID_Interface, &MouseReport);
 
 		printf("Button: %d\tX: %d\t Y: %d\r", MouseReport.Button, MouseReport.X,
 				MouseReport.Y);
@@ -82,7 +81,7 @@ static void SetupHardware(void) {
 	SystemCoreClockUpdate();
 	Board_Init();
 	Chip_USB_Init();
-	USB_Init(Keyboard_HID_Interface.Config.PortNumber, USB_MODE_Host);
+	USB_Init(Mouse_HID_Interface.Config.PortNumber, USB_MODE_Host);
 	/* Hardware Initialization */
 	Board_Debug_Init();
 }
@@ -100,13 +99,13 @@ static void SetupHardware(void) {
 int main(void) {
 	SetupHardware();
 
-	DEBUGOUT("Keyboard Host Demo running.\r\n");
+	DEBUGOUT("Mouse Host running.\r\n");
 
 	for (;;) {
-		KeyboardHost_Task();
+		MouseHost_Task();
 
-		HID_Host_USBTask(&Keyboard_HID_Interface);
-		USB_USBTask(Keyboard_HID_Interface.Config.PortNumber, USB_MODE_Host);
+		HID_Host_USBTask(&Mouse_HID_Interface);
+		USB_USBTask(Mouse_HID_Interface.Config.PortNumber, USB_MODE_Host);
 	}
 }
 
@@ -138,33 +137,31 @@ void EVENT_USB_Host_DeviceEnumerationComplete(const uint8_t corenum) {
 		return;
 	}
 
-	Keyboard_HID_Interface.Config.PortNumber = corenum;
-	if (HID_Host_ConfigurePipes(&Keyboard_HID_Interface, ConfigDescriptorSize,
+	Mouse_HID_Interface.Config.PortNumber = corenum;
+	if (HID_Host_ConfigurePipes(&Mouse_HID_Interface, ConfigDescriptorSize,
 			ConfigDescriptorData) != HID_ENUMERROR_NoError) {
-		DEBUGOUT("Attached Device Not a Valid Keyboard.\r\n");
+		DEBUGOUT("Attached Device Not a Valid Mouse.\r\n");
 
 		return;
 	}
 
 	if (USB_Host_SetDeviceConfiguration(
-			Keyboard_HID_Interface.Config.PortNumber, 1)
+			Mouse_HID_Interface.Config.PortNumber, 1)
 			!= HOST_SENDCONTROL_Successful) {
 		DEBUGOUT("Error Setting Device Configuration.\r\n");
 
 		return;
 	}
 
-	printf("Interface!!: %d\r\n", Keyboard_HID_Interface.State.InterfaceNumber);
-
-	if (HID_Host_SetBootProtocol(&Keyboard_HID_Interface) != 0) {
+	if (HID_Host_SetBootProtocol(&Mouse_HID_Interface) != 0) {
 		DEBUGOUT("Could not Set Boot Protocol Mode.\r\n");
 
 		USB_Host_SetDeviceConfiguration(
-				Keyboard_HID_Interface.Config.PortNumber, 0);
+				Mouse_HID_Interface.Config.PortNumber, 0);
 		return;
 	}
 
-	DEBUGOUT("Keyboard Enumerated.\r\n");
+	DEBUGOUT("Mouse Enumerated.\r\n");
 }
 
 //void GetDescriptor(int portnum) {
