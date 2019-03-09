@@ -32,6 +32,39 @@
 
 #include "MouseHost.h"
 
+#define TIMER0_IRQ_HANDLER				TIMER0_IRQHandler  // TIMER0 interrupt IRQ function name
+#define TIMER0_INTERRUPT_NVIC_NAME		TIMER0_IRQn        // TIMER0 interrupt NVIC interrupt name
+
+
+#define max(a,b) \
+({ __typeof__ (a) _a = (a); \
+   __typeof__ (b) _b = (b); \
+ _a > _b ? _a : _b; })
+
+#define min(a,b) \
+({ __typeof__ (a) _a = (a); \
+   __typeof__ (b) _b = (b); \
+ _a < _b ? _a : _b; })
+
+uint8_t pins[7] = {0,1,2,4,5,6,8};
+bool smile [7][5] = { {0,0,0,0,0}
+					, {0,0,0,0,0}
+					, {0,0,0,0,0}
+					, {0,0,0,0,0}
+					, {0,0,0,0,0}
+					, {0,0,0,0,0}
+					, {0,0,0,0,0}};
+
+double cx = 0;
+double cy = 0;
+double pcy = 0;
+double pcx = 0;
+
+int current = 0;
+
+int maxX = 6;
+int maxY = 4;
+
 /*****************************************************************************
  * Private types/enumerations/variables
  ****************************************************************************/
@@ -57,6 +90,45 @@ static USB_ClassInfo_HID_Host_t Mouse_HID_Interface = {
  * Private functions
  ****************************************************************************/
 
+void TIMER0_IRQHandler(void)
+{
+	Chip_TIMER_Disable(LPC_TIMER0);		  // Stop TIMER0
+	Chip_TIMER_Reset(LPC_TIMER0);		  // Reset TIMER0
+	Chip_TIMER_ClearMatch(LPC_TIMER0,0);  // Clear TIMER0 interrupt
+
+
+	if(current == 0){
+		Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, pins[6]);
+	}else{
+		Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, pins[current - 1]);
+	}
+
+	int i = 0;
+//	for(; i < 5; i++){
+//		if(smile[current][i]){
+//			Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 9 + i);
+//		}else{
+//			Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 9 + i);
+//		}
+//
+//		Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 9 + i);
+//	}
+//
+//	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 9);
+
+//	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, pins[current++]);
+
+
+	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 9 + pcy);
+	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, pins[(int)pcx]);
+
+	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, pins[(int)cx]);
+	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 9 + cy);
+
+	current %= 7;
+	Chip_TIMER_Enable(LPC_TIMER0);
+}
+
 /* Mouse management task */
 static void MouseHost_Task(void) {
 
@@ -70,9 +142,18 @@ static void MouseHost_Task(void) {
 		USB_MouseReport_Data_t MouseReport;
 		HID_Host_ReceiveReport(&Mouse_HID_Interface, &MouseReport);
 
-		printf("Button: %d\tX: %d\t Y: %d\r", MouseReport.Button, MouseReport.X,
-				MouseReport.Y);
+		printf("Button: %d\tX: %d\t Y: %d\r", MouseReport.Button, MouseReport.X, MouseReport.Y);
 
+		pcx = cx;
+		pcy = cy;
+
+		cx += MouseReport.X / 128.0;
+		cx = max(0, cx);
+		cx = min(maxX, cx);
+
+		cy += MouseReport.Y / 128.0;
+		cy = max(0, cy);
+		cy = min(maxY, cy);
 	}
 }
 
@@ -98,6 +179,58 @@ static void SetupHardware(void) {
  */
 int main(void) {
 	SetupHardware();
+
+
+	Chip_IOCON_PinMux(LPC_GPIO, 2, 0, IOCON_FUNC0, IOCON_MODE_INACT);
+	Chip_IOCON_PinMux(LPC_GPIO, 2, 1, IOCON_FUNC0, IOCON_MODE_INACT);
+	Chip_IOCON_PinMux(LPC_GPIO, 2, 2, IOCON_FUNC0, IOCON_MODE_INACT);
+	Chip_IOCON_PinMux(LPC_GPIO, 2, 3, IOCON_FUNC0, IOCON_MODE_INACT);
+	Chip_IOCON_PinMux(LPC_GPIO, 2, 4, IOCON_FUNC0, IOCON_MODE_INACT);
+	Chip_IOCON_PinMux(LPC_GPIO, 2, 5, IOCON_FUNC0, IOCON_MODE_INACT);
+	Chip_IOCON_PinMux(LPC_GPIO, 2, 6, IOCON_FUNC0, IOCON_MODE_INACT);
+	Chip_IOCON_PinMux(LPC_GPIO, 2, 8, IOCON_FUNC0, IOCON_MODE_INACT);
+	Chip_IOCON_PinMux(LPC_GPIO, 2, 9, IOCON_FUNC0,  1 << 10);
+	Chip_IOCON_PinMux(LPC_GPIO, 2, 10, IOCON_FUNC0, 1 << 10);
+	Chip_IOCON_PinMux(LPC_GPIO, 2, 11, IOCON_FUNC0,  1 << 10);
+	Chip_IOCON_PinMux(LPC_GPIO, 2, 12, IOCON_FUNC0,  1 << 10);
+	Chip_IOCON_PinMux(LPC_GPIO, 2, 13, IOCON_FUNC0,  1 << 10);
+	Chip_IOCON_PinMux(LPC_GPIO, 2, 14, IOCON_FUNC0,  1 << 10);
+	Chip_IOCON_PinMux(LPC_GPIO, 2, 15, IOCON_FUNC0,  1 << 10);
+	Chip_IOCON_PinMux(LPC_GPIO, 2, 16, IOCON_FUNC0,  1 << 10);
+
+	Chip_GPIO_SetPortDIROutput(LPC_GPIO, 2, 1UL << 0 | 1UL << 1 | 1UL << 2 | 1UL << 3 | 1UL << 4| 1UL << 5 | 1UL << 6 | 1UL << 8
+			| 1UL << 9 | 1UL << 10 | 1UL << 11 | 1UL << 12 | 1UL << 13 | 1UL << 14 | 1UL << 15 | 1UL << 16);
+
+
+	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 0);
+	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 1);
+	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 2);
+	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 3);
+	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 4);
+	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 5);
+	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 6);
+	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 8);
+	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 9);
+	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 10);
+	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 11);
+	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 12);
+	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 13);
+	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 14);
+	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 15);
+	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 16);
+
+
+	int PrescaleValue = 59; // Set to microseconds.
+	Chip_TIMER_Init(LPC_TIMER0);					   // Initialize TIMER0
+	Chip_TIMER_PrescaleSet(LPC_TIMER0,PrescaleValue);  // Set prescale value
+	Chip_TIMER_SetMatch(LPC_TIMER0,0,1000);		   // Set match value so it trigger every second
+	Chip_TIMER_MatchEnableInt(LPC_TIMER0, 0);		   // Configure to trigger interrupt on match
+
+	// Enable Interrupt
+	NVIC_ClearPendingIRQ(TIMER0_INTERRUPT_NVIC_NAME);
+	NVIC_EnableIRQ(TIMER0_INTERRUPT_NVIC_NAME);
+
+	Chip_TIMER_Enable(LPC_TIMER0);
 
 	DEBUGOUT("Mouse Host running.\r\n");
 
