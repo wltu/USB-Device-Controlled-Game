@@ -17,5 +17,8 @@ After many days of research and testing, we have concluded that having communica
 Fortunately, USB mouse input went a lot smoother. We modified the protocol to the mouse's and changed the way the reports from the mouse were read to get button, X, and Y data. After some testing, we found the button data to be (in binary) 001 when the left button was pressed, 010 for the right button, and 100 for the middle button. When multiple buttons were pressed, these values would be ORed together.
 
 #### Week 3 (3/03 - 3/09):
+This week we were successful in setting up the 8x8 LED screen using GPIO pins. It appears that the bottom few rows have issues turning on on the hardware side of the part itself so we will be unable to use that part of the screen. To turn on the rest of the leds, we quickly rotate turning on each row and then turn on the respective column so that all the LEDs we want on are on and none of the LEDs we want off are on. The downside to this strategy is that the individual LEDs will appear less bright as they are only on for a fraction of the time but since the rate is so fast, all the lit LEDs appear to always be on to the human eye. We have also merged this part of the project with the USB mouse host so that the lit LED corresponds to the position of the mouse.
+
+We have also began work to create a sound from the speaker when a mouse button is pressed. There is a sample project called periph_i2s that sends audio data from a computer through an audio cable to the LPC's speaker which we plan to mirror in order to create noise. One problem with this strategy is that we wish to create our own audio data rather than pulling it from a computer so we will have to understand how the data is formatted.  
 #### Week 4 (3/10 - 3/16):
 #### Final Week:
