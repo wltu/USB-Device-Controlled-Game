@@ -175,42 +175,31 @@ static void SetupHardware(void) {
  * Public functions
  ****************************************************************************/
 
-
-
-/**
- * @brief	Main program entry point
- * @return	Nothing
- * @note	This routine configures the hardware required by the application,
- * then enters a loop to run the application tasks in sequence.
- */
-int main(void) {
-	SetupHardware();
-
+void AudioSetup(){
 	// Audio set up
 	I2S_AUDIO_FORMAT_T audio_Confg;
-		uint8_t bufferUART, continue_Flag = 1;
-		audio_Confg.SampleRate = 48000;
-		 //Select audio data is 2 channels (1 is mono, 2 is stereo)
-		audio_Confg.ChannelNumber = 1;
-		 //Select audio data is 16 bits
-		audio_Confg.WordWidth = 32;
+	uint8_t bufferUART, continue_Flag = 1;
+	audio_Confg.SampleRate = 48000;
+	//Select audio data is 2 channels (1 is mono, 2 is stereo)
+	audio_Confg.ChannelNumber = 1;
+	//Select audio data is 16 bits
+	audio_Confg.WordWidth = 32;
 
 
-		Board_Audio_Init(LPC_I2S, UDA1380_LINE_IN);
-		Chip_I2S_Init(LPC_I2S);
-		Chip_I2S_RxConfig(LPC_I2S, &audio_Confg);
-		Chip_I2S_TxConfig(LPC_I2S, &audio_Confg);
+	Board_Audio_Init(LPC_I2S, UDA1380_LINE_IN);
+	Chip_I2S_Init(LPC_I2S);
+	Chip_I2S_RxConfig(LPC_I2S, &audio_Confg);
+	Chip_I2S_TxConfig(LPC_I2S, &audio_Confg);
 
-		Chip_I2S_TxStop(LPC_I2S);
-		Chip_I2S_DisableMute(LPC_I2S);
-		Chip_I2S_TxStart(LPC_I2S);
+	Chip_I2S_TxStop(LPC_I2S);
+	Chip_I2S_DisableMute(LPC_I2S);
+	Chip_I2S_TxStart(LPC_I2S);
 
-		Chip_I2S_Int_RxCmd(LPC_I2S, ENABLE, 4);
-		Chip_I2S_Int_TxCmd(LPC_I2S, ENABLE, 4);
+	Chip_I2S_Int_RxCmd(LPC_I2S, ENABLE, 4);
+	Chip_I2S_Int_TxCmd(LPC_I2S, ENABLE, 4);
+}
 
-
-	// LED set up
-
+void LEDSetup(){
 	Chip_IOCON_PinMux(LPC_GPIO, 2, 0, IOCON_FUNC0, IOCON_MODE_INACT);
 	Chip_IOCON_PinMux(LPC_GPIO, 2, 1, IOCON_FUNC0, IOCON_MODE_INACT);
 	Chip_IOCON_PinMux(LPC_GPIO, 2, 2, IOCON_FUNC0, IOCON_MODE_INACT);
@@ -247,8 +236,9 @@ int main(void) {
 	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 14);
 	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 15);
 	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 16);
+}
 
-
+void TimerSetup(){
 	int PrescaleValue = 1; // Set to microseconds.
 	Chip_TIMER_Init(LPC_TIMER0);					   // Initialize TIMER0
 	Chip_TIMER_PrescaleSet(LPC_TIMER0,PrescaleValue);  // Set prescale value
@@ -260,22 +250,44 @@ int main(void) {
 	NVIC_EnableIRQ(TIMER0_INTERRUPT_NVIC_NAME);
 
 	Chip_TIMER_Enable(LPC_TIMER0);
+}
+
+void SendAudioData(){
+	if ((Chip_I2S_GetTxLevel(LPC_I2S) < 4)) {
+		int time = Chip_TIMER_ReadCount(LPC_TIMER0);
+		int data = 0;
+		if((buttons & LEFT_BUTTON) == LEFT_BUTTON)
+			data += (int)(0x0FFFFFFF*sin(time/10000.0));
+		if((buttons & RIGHT_BUTTON) == RIGHT_BUTTON)
+			data += (int)(0x0FFFFFFF*sin(time/5000.0));
+		if((buttons & MIDDLE_BUTTON) == MIDDLE_BUTTON)
+			data += (int)(0x0FFFFFFF*sin(time/4000.0));
+		Chip_I2S_Send(LPC_I2S, data);
+
+	}
+}
+
+/**
+ * @brief	Main program entry point
+ * @return	Nothing
+ * @note	This routine configures the hardware required by the application,
+ * then enters a loop to run the application tasks in sequence.
+ */
+int main(void) {
+	SetupHardware();
+
+	AudioSetup();
+
+	LEDSetup();
+
+	TimerSetup();
+
 
 	DEBUGOUT("Mouse Host running.\r\n");
 
 	for (;;) {
-		if ((Chip_I2S_GetTxLevel(LPC_I2S) < 4)) {
-			int time = Chip_TIMER_ReadCount(LPC_TIMER0);
-			int data = 0;
-			if((buttons & LEFT_BUTTON) == LEFT_BUTTON)
-				data += (int)(0x0FFFFFFF*sin(time/10000.0));
-			if((buttons & RIGHT_BUTTON) == RIGHT_BUTTON)
-				data += (int)(0x0FFFFFFF*sin(time/5000.0));
-			if((buttons & MIDDLE_BUTTON) == MIDDLE_BUTTON)
-				data += (int)(0x0FFFFFFF*sin(time/4000.0));
-			Chip_I2S_Send(LPC_I2S, data);
+		SendAudioData();
 
-		}
 		MouseHost_Task();
 
 		HID_Host_USBTask(&Mouse_HID_Interface);
