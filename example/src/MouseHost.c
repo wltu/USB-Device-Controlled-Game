@@ -31,7 +31,7 @@
  */
 
 #include "MouseHost.h"
-
+#include "math.h"
 #define TIMER0_IRQ_HANDLER				TIMER0_IRQHandler  // TIMER0 interrupt IRQ function name
 #define TIMER0_INTERRUPT_NVIC_NAME		TIMER0_IRQn        // TIMER0 interrupt NVIC interrupt name
 
@@ -54,6 +54,8 @@ bool smile [7][5] = { {0,0,0,0,0}
 					, {0,0,0,0,0}
 					, {0,0,0,0,0}
 					, {0,0,0,0,0}};
+int buttons = 0;
+const int LEFT_BUTTON = 1, RIGHT_BUTTON = 2, MIDDLE_BUTTON = 4;
 
 double cx = 0;
 double cy = 0;
@@ -90,6 +92,7 @@ static USB_ClassInfo_HID_Host_t Mouse_HID_Interface = {
  * Private functions
  ****************************************************************************/
 
+bool test = false;
 void TIMER0_IRQHandler(void)
 {
 	Chip_TIMER_Disable(LPC_TIMER0);		  // Stop TIMER0
@@ -125,24 +128,23 @@ void TIMER0_IRQHandler(void)
 	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, pins[(int)cx]);
 	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 9 + cy);
 
+	test = !test;
+	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, pins[(int)cx]);
+	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 9 + cy);
 	current %= 7;
 	Chip_TIMER_Enable(LPC_TIMER0);
 }
-
 /* Mouse management task */
 static void MouseHost_Task(void) {
 
 	if (USB_HostState[Mouse_HID_Interface.Config.PortNumber]
 			!= HOST_STATE_Configured) {
-		//printf("DataOUTPipeDoubleBank: %d\r\n", Mouse_HID_Interface.Config.HIDInterfaceProtocol);
 		return;
 	}
 
 	if (HID_Host_IsReportReceived(&Mouse_HID_Interface)) {
 		USB_MouseReport_Data_t MouseReport;
 		HID_Host_ReceiveReport(&Mouse_HID_Interface, &MouseReport);
-
-		printf("Button: %d\tX: %d\t Y: %d\r", MouseReport.Button, MouseReport.X, MouseReport.Y);
 
 		pcx = cx;
 		pcy = cy;
@@ -154,6 +156,8 @@ static void MouseHost_Task(void) {
 		cy += MouseReport.Y / 128.0;
 		cy = max(0, cy);
 		cy = min(maxY, cy);
+
+		buttons = MouseReport.Button;
 	}
 }
 
@@ -171,6 +175,8 @@ static void SetupHardware(void) {
  * Public functions
  ****************************************************************************/
 
+
+
 /**
  * @brief	Main program entry point
  * @return	Nothing
@@ -180,6 +186,30 @@ static void SetupHardware(void) {
 int main(void) {
 	SetupHardware();
 
+	// Audio set up
+	I2S_AUDIO_FORMAT_T audio_Confg;
+		uint8_t bufferUART, continue_Flag = 1;
+		audio_Confg.SampleRate = 48000;
+		 //Select audio data is 2 channels (1 is mono, 2 is stereo)
+		audio_Confg.ChannelNumber = 1;
+		 //Select audio data is 16 bits
+		audio_Confg.WordWidth = 32;
+
+
+		Board_Audio_Init(LPC_I2S, UDA1380_LINE_IN);
+		Chip_I2S_Init(LPC_I2S);
+		Chip_I2S_RxConfig(LPC_I2S, &audio_Confg);
+		Chip_I2S_TxConfig(LPC_I2S, &audio_Confg);
+
+		Chip_I2S_TxStop(LPC_I2S);
+		Chip_I2S_DisableMute(LPC_I2S);
+		Chip_I2S_TxStart(LPC_I2S);
+
+		Chip_I2S_Int_RxCmd(LPC_I2S, ENABLE, 4);
+		Chip_I2S_Int_TxCmd(LPC_I2S, ENABLE, 4);
+
+
+	// LED set up
 
 	Chip_IOCON_PinMux(LPC_GPIO, 2, 0, IOCON_FUNC0, IOCON_MODE_INACT);
 	Chip_IOCON_PinMux(LPC_GPIO, 2, 1, IOCON_FUNC0, IOCON_MODE_INACT);
@@ -201,7 +231,6 @@ int main(void) {
 	Chip_GPIO_SetPortDIROutput(LPC_GPIO, 2, 1UL << 0 | 1UL << 1 | 1UL << 2 | 1UL << 3 | 1UL << 4| 1UL << 5 | 1UL << 6 | 1UL << 8
 			| 1UL << 9 | 1UL << 10 | 1UL << 11 | 1UL << 12 | 1UL << 13 | 1UL << 14 | 1UL << 15 | 1UL << 16);
 
-
 	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 0);
 	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 1);
 	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 2);
@@ -220,10 +249,10 @@ int main(void) {
 	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 16);
 
 
-	int PrescaleValue = 59; // Set to microseconds.
+	int PrescaleValue = 1; // Set to microseconds.
 	Chip_TIMER_Init(LPC_TIMER0);					   // Initialize TIMER0
 	Chip_TIMER_PrescaleSet(LPC_TIMER0,PrescaleValue);  // Set prescale value
-	Chip_TIMER_SetMatch(LPC_TIMER0,0,1000);		   // Set match value so it trigger every second
+	Chip_TIMER_SetMatch(LPC_TIMER0,0,100000);		   // Set match value so it trigger every second
 	Chip_TIMER_MatchEnableInt(LPC_TIMER0, 0);		   // Configure to trigger interrupt on match
 
 	// Enable Interrupt
@@ -235,6 +264,18 @@ int main(void) {
 	DEBUGOUT("Mouse Host running.\r\n");
 
 	for (;;) {
+		if ((Chip_I2S_GetTxLevel(LPC_I2S) < 4)) {
+			int time = Chip_TIMER_ReadCount(LPC_TIMER0);
+			int data = 0;
+			if((buttons & LEFT_BUTTON) == LEFT_BUTTON)
+				data += (int)(0x0FFFFFFF*sin(time/10000.0));
+			if((buttons & RIGHT_BUTTON) == RIGHT_BUTTON)
+				data += (int)(0x0FFFFFFF*sin(time/5000.0));
+			if((buttons & MIDDLE_BUTTON) == MIDDLE_BUTTON)
+				data += (int)(0x0FFFFFFF*sin(time/4000.0));
+			Chip_I2S_Send(LPC_I2S, data);
+
+		}
 		MouseHost_Task();
 
 		HID_Host_USBTask(&Mouse_HID_Interface);
@@ -296,33 +337,6 @@ void EVENT_USB_Host_DeviceEnumerationComplete(const uint8_t corenum) {
 
 	DEBUGOUT("Mouse Enumerated.\r\n");
 }
-
-//void GetDescriptor(int portnum) {
-//
-//	printf("Hello?\r");
-//	uint8_t ConfigHeader[sizeof(XIDDescriptor)];
-//	XIDDescriptor *pCfgHeader = (XIDDescriptor*) ConfigHeader;
-//
-//	USB_ControlRequest = (USB_Request_Header_t )
-//			{ .bmRequestType = 128, .bRequest = 1, .wValue = 0x0200,
-//					.wIndex = 0, .wLength = 16, };
-//
-//	printf("Hello?\r");
-//	Pipe_SelectPipe(portnum, PIPE_CONTROLPIPE);
-//	printf("Hello?\r");
-//	int ErrorCode = 0;
-//	if ((ErrorCode = USB_Host_SendControlRequest(portnum, ConfigHeader))
-//			!= HOST_SENDCONTROL_Successful) {
-//		printf("Failed with Error Code: %d\r", ErrorCode);
-//	}
-//
-//	printf("Hello?\r");
-//	printf("Descriptor type: %d\r", pCfgHeader->bDescriptorType);
-//	printf("Type: %d\r", pCfgHeader->bType);
-//	printf("Sub type: %d\r", pCfgHeader->bSubType);
-//	printf("Length: %d\r", pCfgHeader->bLength);
-//
-//}
 
 /* This indicates that a hardware error occurred while in host mode. */
 void EVENT_USB_Host_HostError(const uint8_t corenum, const uint8_t ErrorCode) {
