@@ -32,6 +32,7 @@
 
 #include "MouseHost.h"
 #include "math.h"
+#include "stdlib.h"
 #define TIMER0_IRQ_HANDLER				TIMER0_IRQHandler  // TIMER0 interrupt IRQ function name
 #define TIMER0_INTERRUPT_NVIC_NAME		TIMER0_IRQn        // TIMER0 interrupt NVIC interrupt name
 
@@ -57,10 +58,16 @@ bool smile [7][5] = { {0,0,0,0,0}
 int buttons = 0;
 const int LEFT_BUTTON = 1, RIGHT_BUTTON = 2, MIDDLE_BUTTON = 4;
 
+//Current mouse location
 double cx = 0;
 double cy = 0;
+//Previous mouse location
 double pcy = 0;
 double pcx = 0;
+//Goal location
+int goalX = 0, goalY = 0;
+
+int points = 0;
 
 int current = 0;
 
@@ -134,6 +141,14 @@ void TIMER0_IRQHandler(void)
 	current %= 7;
 	Chip_TIMER_Enable(LPC_TIMER0);
 }
+
+void RespawnGoal(){
+	do{
+		goalX = rand() % (maxX + 1);
+		goalY = rand() % (maxY + 1);
+	}while(goalX == (int)cx && goalY == (int)cy);
+}
+
 /* Mouse management task */
 static void MouseHost_Task(void) {
 
@@ -156,6 +171,12 @@ static void MouseHost_Task(void) {
 		cy += MouseReport.Y / 128.0;
 		cy = max(0, cy);
 		cy = min(maxY, cy);
+
+		if(goalX == (int)cx && goalY == (int)cy){
+			RespawnGoal();
+			points++;
+			printf("You've gotten %d points!\r", points);
+		}
 
 		buttons = MouseReport.Button;
 	}
@@ -180,9 +201,9 @@ void AudioSetup(){
 	I2S_AUDIO_FORMAT_T audio_Confg;
 	uint8_t bufferUART, continue_Flag = 1;
 	audio_Confg.SampleRate = 48000;
-	//Select audio data is 2 channels (1 is mono, 2 is stereo)
+	//Select audio data to be 1 channel (1 is mono, 2 is stereo)
 	audio_Confg.ChannelNumber = 1;
-	//Select audio data is 16 bits
+	//Select audio data to be 32 bits
 	audio_Confg.WordWidth = 32;
 
 
@@ -239,7 +260,7 @@ void LEDSetup(){
 }
 
 void TimerSetup(){
-	int PrescaleValue = 1; // Set to microseconds.
+	int PrescaleValue = 1;
 	Chip_TIMER_Init(LPC_TIMER0);					   // Initialize TIMER0
 	Chip_TIMER_PrescaleSet(LPC_TIMER0,PrescaleValue);  // Set prescale value
 	Chip_TIMER_SetMatch(LPC_TIMER0,0,100000);		   // Set match value so it trigger every second
@@ -257,13 +278,12 @@ void SendAudioData(){
 		int time = Chip_TIMER_ReadCount(LPC_TIMER0);
 		int data = 0;
 		if((buttons & LEFT_BUTTON) == LEFT_BUTTON)
-			data += (int)(0x0FFFFFFF*sin(time/10000.0));
+			data += (int)(0x0FFFFFFF*sin(time/6000.0));
 		if((buttons & RIGHT_BUTTON) == RIGHT_BUTTON)
 			data += (int)(0x0FFFFFFF*sin(time/5000.0));
 		if((buttons & MIDDLE_BUTTON) == MIDDLE_BUTTON)
 			data += (int)(0x0FFFFFFF*sin(time/4000.0));
 		Chip_I2S_Send(LPC_I2S, data);
-
 	}
 }
 
@@ -282,6 +302,7 @@ int main(void) {
 
 	TimerSetup();
 
+	RespawnGoal();
 
 	DEBUGOUT("Mouse Host running.\r\n");
 
