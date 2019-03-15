@@ -48,7 +48,7 @@
  _a < _b ? _a : _b; })
 
 uint8_t pins[7] = {0,1,2,4,5,6,8};
-bool smile [7][5] = { {0,0,0,0,0}
+bool screen [7][5] = { {0,0,0,0,0}
 					, {0,0,0,0,0}
 					, {0,0,0,0,0}
 					, {0,0,0,0,0}
@@ -73,6 +73,9 @@ int current = 0;
 
 int maxX = 6;
 int maxY = 4;
+
+RTC_TIME_T FullTime;
+bool gotPoint = false;
 
 /*****************************************************************************
  * Private types/enumerations/variables
@@ -99,47 +102,52 @@ static USB_ClassInfo_HID_Host_t Mouse_HID_Interface = {
  * Private functions
  ****************************************************************************/
 
-bool test = false;
+int cycles = 0;
 void TIMER0_IRQHandler(void)
 {
 	Chip_TIMER_Disable(LPC_TIMER0);		  // Stop TIMER0
 	Chip_TIMER_Reset(LPC_TIMER0);		  // Reset TIMER0
 	Chip_TIMER_ClearMatch(LPC_TIMER0,0);  // Clear TIMER0 interrupt
 
-
+	// Turn off previous row
 	if(current == 0){
 		Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, pins[6]);
 	}else{
 		Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, pins[current - 1]);
 	}
 
-	int i = 0;
-//	for(; i < 5; i++){
-//		if(smile[current][i]){
-//			Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 9 + i);
-//		}else{
-//			Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 9 + i);
-//		}
-//
-//		Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 9 + i);
-//	}
-//
-//	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 9);
+	// Turn on current row
+	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, pins[current++]);
 
-//	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, pins[current++]);
+	// Turn on columns for current row
+	for(int i = 0; i <= maxY; i++){
+		if(screen[current][i]){
+			Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 9 + i);
+		}else{
+			Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 9 + i);
+		}
+
+		//Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 9 + i);
+	}
 
 
-	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 9 + pcy);
+	/*
+	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 9);
+
+
+
+	/*Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 9 + pcy);
 	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, pins[(int)pcx]);
 
 	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, pins[(int)cx]);
 	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 9 + cy);
 
-	test = !test;
 	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, pins[(int)cx]);
-	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 9 + cy);
-	current %= 7;
+	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 9 + cy);*/
+
+	current %= maxX + 1;
 	Chip_TIMER_Enable(LPC_TIMER0);
+	cycles++;
 }
 
 void RespawnGoal(){
@@ -147,6 +155,7 @@ void RespawnGoal(){
 		goalX = rand() % (maxX + 1);
 		goalY = rand() % (maxY + 1);
 	}while(goalX == (int)cx && goalY == (int)cy);
+	screen[goalX][goalY] = 1;
 }
 
 /* Mouse management task */
@@ -163,7 +172,7 @@ static void MouseHost_Task(void) {
 
 		pcx = cx;
 		pcy = cy;
-
+		screen[(int)cx][(int)cy] = 0;
 		cx += MouseReport.X / 128.0;
 		cx = max(0, cx);
 		cx = min(maxX, cx);
@@ -171,11 +180,15 @@ static void MouseHost_Task(void) {
 		cy += MouseReport.Y / 128.0;
 		cy = max(0, cy);
 		cy = min(maxY, cy);
+		screen[(int)cx][(int)cy] = 1;
 
 		if(goalX == (int)cx && goalY == (int)cy){
 			RespawnGoal();
 			points++;
-			printf("You've gotten %d points!\r", points);
+			gotPoint = true;
+			cycles = 0;
+			DEBUGOUT("You've gotten %d points!\r", points);
+			resetTime();
 		}
 
 		buttons = MouseReport.Button;
@@ -273,7 +286,7 @@ void TimerSetup(){
 	Chip_TIMER_Enable(LPC_TIMER0);
 }
 
-void SendAudioData(){
+void SendAudioData(int rtcSec){
 	if ((Chip_I2S_GetTxLevel(LPC_I2S) < 4)) {
 		int time = Chip_TIMER_ReadCount(LPC_TIMER0);
 		int data = 0;
@@ -283,8 +296,32 @@ void SendAudioData(){
 			data += (int)(0x0FFFFFFF*sin(time/5000.0));
 		if((buttons & MIDDLE_BUTTON) == MIDDLE_BUTTON)
 			data += (int)(0x0FFFFFFF*sin(time/4000.0));
+
+		if(gotPoint){
+			double timePassed = (cycles + time/100000.0)/100;
+			data += (int)(0x0FFFFFFF*sin(time/(1000.0*(3+timePassed))));
+		}
 		Chip_I2S_Send(LPC_I2S, data);
 	}
+}
+
+void RTCSetup(){
+	Chip_RTC_Init(LPC_RTC);
+	resetTime();
+	Chip_RTC_Enable(LPC_RTC, ENABLE);
+}
+
+void resetTime(){
+	FullTime.time[RTC_TIMETYPE_SECOND]  = 0;
+	FullTime.time[RTC_TIMETYPE_MINUTE]  = 0;
+	FullTime.time[RTC_TIMETYPE_HOUR]    = 14;
+	FullTime.time[RTC_TIMETYPE_DAYOFMONTH]  = 1;
+	FullTime.time[RTC_TIMETYPE_DAYOFWEEK]   = 5;
+	FullTime.time[RTC_TIMETYPE_DAYOFYEAR]   = 279;
+	FullTime.time[RTC_TIMETYPE_MONTH]   = 2;
+	FullTime.time[RTC_TIMETYPE_YEAR]    = 2019;
+
+	Chip_RTC_SetFullTime(LPC_RTC, &FullTime);
 }
 
 /**
@@ -304,10 +341,19 @@ int main(void) {
 
 	RespawnGoal();
 
+	RTCSetup();
+
 	DEBUGOUT("Mouse Host running.\r\n");
 
 	for (;;) {
-		SendAudioData();
+		//flash goal LED with RTC
+		int sec = Chip_RTC_GetTime(LPC_RTC, RTC_TIMETYPE_SECOND);
+		screen[goalX][goalY] = sec%2;
+		//Check to end celebration noise
+		if(gotPoint && sec > 3)
+			gotPoint = false;
+
+		SendAudioData(sec);
 
 		MouseHost_Task();
 
