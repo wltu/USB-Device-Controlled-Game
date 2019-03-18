@@ -8,6 +8,12 @@
 ### Project Idea:
 The idea of the project is to connected a XboxOne controller to LPC4088 micro-controller and have it perform some task. The full project proposal can be viewed in [here](https://github.com/wltu/ECE153B-Project/blob/master/ECE153B_ProjectPropoal.pdf "Project Proposal").
 
+##### Project Idea Update:
+Instead of using the Xbox One controller that have required information for communication that is not avaliable online without reverse enginnering along with difference strudture in USB communication, we have decided to use a mouse that has a simpler USB comminucation with the LPC board. In the process of working with the Xbox One controller, we learned a lot about the USB communication but is still not evnough to get the Xbox controller connection to function.
+
+##### Final Project Idea:
+The final project will consited of a game where the user controls a dot in the LED matrix and have to chase a randomly located target on the LED matrix. The LPC plays a sound using I2S everytime the player scores or press any mouse buttons.
+
 #### Week 1 (2/17 - 2/23):
 The information on the Configuration and Interface descriptor for the XboxOne controller was looked into. The information was modified into the code in attempts to connect the controller to the micro-controller. The 8x8 LED matrix is also purchased. 
 
@@ -26,6 +32,11 @@ This week we were successful in setting up the 8x8 LED screen using GPIO pins. T
 We have also began work to create a sound from the speaker when a mouse button is pressed. There is a sample project called periph_i2s that sends audio data from a computer through an audio cable to the LPC's speaker which we plan to mirror in order to create noise. One problem with this strategy is that we wish to create our own audio data rather than pulling it from a computer so we will have to understand how the data is formatted.  
 
 #### Week 4 (3/10 - 3/16):
+Outline:
+I2S
+Game logic
+RTC
+
 #### Final Week:
 [![DEMO](http://img.youtube.com/vi/n_6XO0G7D-Q/0.jpg)](http://www.youtube.com/watch?v=n_6XO0G7D-Q "ECE153B Final Demo")
 
