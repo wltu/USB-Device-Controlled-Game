@@ -27,3 +27,5 @@ We have also began work to create a sound from the speaker when a mouse button i
 
 #### Week 4 (3/10 - 3/16):
 #### Final Week:
+[![DEMO](http://img.youtube.com/vi/n_6XO0G7D-Q/0.jpg)](http://www.youtube.com/watch?v=n_6XO0G7D-Q "ECE153B Final Demo")
+
