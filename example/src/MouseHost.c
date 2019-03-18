@@ -48,22 +48,44 @@
  _a < _b ? _a : _b; })
 
 uint8_t pins[7] = {0,1,2,4,5,6,8};
-bool screen [7][5] = { {0,0,0,0,0}
+bool screen[7][5] = { {1,0,0,0,0}
 					, {0,0,0,0,0}
 					, {0,0,0,0,0}
 					, {0,0,0,0,0}
 					, {0,0,0,0,0}
 					, {0,0,0,0,0}
 					, {0,0,0,0,0}};
+
+bool reset[7][5] = { {1,0,0,0,0}
+					, {0,0,0,0,0}
+					, {0,0,0,0,0}
+					, {0,0,0,0,0}
+					, {0,0,0,0,0}
+					, {0,0,0,0,0}
+					, {0,0,0,0,0}};
+
+bool frown[7][5] = { {0,0,0,0,1}
+					, {0,0,0,1,0}
+					, {1,1,0,1,0}
+					, {0,0,0,1,0}
+					, {1,1,0,1,0}
+					, {0,0,0,1,0}
+					, {0,0,0,0,1}};
+
+bool smile[7][5] = { {0,0,0,1,0}
+					, {0,0,0,0,1}
+					, {1,1,0,0,1}
+					, {0,0,0,0,1}
+					, {1,1,0,0,1}
+					, {0,0,0,0,1}
+					, {0,0,0,1,0}};
+
 int buttons = 0;
 const int LEFT_BUTTON = 1, RIGHT_BUTTON = 2, MIDDLE_BUTTON = 4;
 
 //Current mouse location
 double cx = 0;
 double cy = 0;
-//Previous mouse location
-double pcy = 0;
-double pcx = 0;
 //Goal location
 int goalX = 0, goalY = 0;
 
@@ -76,6 +98,7 @@ int maxY = 4;
 
 RTC_TIME_T FullTime;
 bool gotPoint = false;
+bool lostGame = false, winGame = false;
 
 /*****************************************************************************
  * Private types/enumerations/variables
@@ -116,8 +139,6 @@ void TIMER0_IRQHandler(void)
 		Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, pins[current - 1]);
 	}
 
-	// Turn on current row
-	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, pins[current++]);
 
 	// Turn on columns for current row
 	for(int i = 0; i <= maxY; i++){
@@ -129,6 +150,17 @@ void TIMER0_IRQHandler(void)
 
 		//Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 9 + i);
 	}
+
+	// Turn on current row
+	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, pins[current++]);
+	/*if(cycles == 1){
+		for(int i = 0; i < maxY + 1; i++){
+			for(int j = 0; j < maxX + 1; j++){
+				printf("%d\t", screen[j][i]);
+			}
+			printf("\r");
+		}
+	}*/
 
 
 	/*
@@ -154,13 +186,12 @@ void RespawnGoal(){
 	do{
 		goalX = rand() % (maxX + 1);
 		goalY = rand() % (maxY + 1);
-	}while(goalX == (int)cx && goalY == (int)cy);
+	}while(fabs(goalX-(int)cx) < 2 && goalY == (int)cy);
 	screen[goalX][goalY] = 1;
 }
 
 /* Mouse management task */
 static void MouseHost_Task(void) {
-
 	if (USB_HostState[Mouse_HID_Interface.Config.PortNumber]
 			!= HOST_STATE_Configured) {
 		return;
@@ -170,25 +201,25 @@ static void MouseHost_Task(void) {
 		USB_MouseReport_Data_t MouseReport;
 		HID_Host_ReceiveReport(&Mouse_HID_Interface, &MouseReport);
 
-		pcx = cx;
-		pcy = cy;
-		screen[(int)cx][(int)cy] = 0;
-		cx += MouseReport.X / 128.0;
-		cx = max(0, cx);
-		cx = min(maxX, cx);
+		if (!lostGame && !winGame) {
+			screen[(int) cx][(int) cy] = 0;
+			cx += MouseReport.X / 128.0;
+			cx = max(0, cx);
+			cx = min(maxX, cx);
 
-		cy += MouseReport.Y / 128.0;
-		cy = max(0, cy);
-		cy = min(maxY, cy);
-		screen[(int)cx][(int)cy] = 1;
+			cy += MouseReport.Y / 128.0;
+			cy = max(0, cy);
+			cy = min(maxY, cy);
+			screen[(int) cx][(int) cy] = 1;
 
-		if(goalX == (int)cx && goalY == (int)cy){
-			RespawnGoal();
-			points++;
-			gotPoint = true;
-			cycles = 0;
-			DEBUGOUT("You've gotten %d points!\r", points);
-			resetTime();
+			if (goalX == (int) cx && goalY == (int) cy) {
+				RespawnGoal();
+				points++;
+				gotPoint = true;
+				cycles = 0;
+				DEBUGOUT("You've gotten %d points!\r", points);
+				resetTime();
+			}
 		}
 
 		buttons = MouseReport.Button;
@@ -208,6 +239,19 @@ static void SetupHardware(void) {
 /*****************************************************************************
  * Public functions
  ****************************************************************************/
+void resetGame(){
+	points = 0;
+	lostGame = winGame = false;
+	resetTime();
+	for(int i = 0; i <= maxX; i++){
+		for(int j = 0; j <= maxY; j++){
+			screen[i][j] = reset[i][j];
+		}
+	}
+	cx = cy = 0;
+	RespawnGoal();
+
+}
 
 void AudioSetup(){
 	// Audio set up
@@ -248,11 +292,11 @@ void LEDSetup(){
 	Chip_IOCON_PinMux(LPC_GPIO, 2, 12, IOCON_FUNC0,  1 << 10);
 	Chip_IOCON_PinMux(LPC_GPIO, 2, 13, IOCON_FUNC0,  1 << 10);
 	Chip_IOCON_PinMux(LPC_GPIO, 2, 14, IOCON_FUNC0,  1 << 10);
-	Chip_IOCON_PinMux(LPC_GPIO, 2, 15, IOCON_FUNC0,  1 << 10);
-	Chip_IOCON_PinMux(LPC_GPIO, 2, 16, IOCON_FUNC0,  1 << 10);
+	//Chip_IOCON_PinMux(LPC_GPIO, 2, 15, IOCON_FUNC0,  1 << 10);
+	//Chip_IOCON_PinMux(LPC_GPIO, 2, 16, IOCON_FUNC0,  1 << 10);
 
 	Chip_GPIO_SetPortDIROutput(LPC_GPIO, 2, 1UL << 0 | 1UL << 1 | 1UL << 2 | 1UL << 3 | 1UL << 4| 1UL << 5 | 1UL << 6 | 1UL << 8
-			| 1UL << 9 | 1UL << 10 | 1UL << 11 | 1UL << 12 | 1UL << 13 | 1UL << 14 | 1UL << 15 | 1UL << 16);
+			| 1UL << 9 | 1UL << 10 | 1UL << 11 | 1UL << 12 | 1UL << 13 | 1UL << 14);
 
 	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 0);
 	Chip_GPIO_SetPinOutLow(LPC_GPIO, 2, 1);
@@ -268,8 +312,8 @@ void LEDSetup(){
 	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 12);
 	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 13);
 	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 14);
-	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 15);
-	Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 16);
+	//Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 15);
+	//Chip_GPIO_SetPinOutHigh(LPC_GPIO, 2, 16);
 }
 
 void TimerSetup(){
@@ -294,12 +338,13 @@ void SendAudioData(int rtcSec){
 			data += (int)(0x0FFFFFFF*sin(time/6000.0));
 		if((buttons & RIGHT_BUTTON) == RIGHT_BUTTON)
 			data += (int)(0x0FFFFFFF*sin(time/5000.0));
-		if((buttons & MIDDLE_BUTTON) == MIDDLE_BUTTON)
+		if((buttons & MIDDLE_BUTTON) == MIDDLE_BUTTON){
 			data += (int)(0x0FFFFFFF*sin(time/4000.0));
+			resetGame();
+		}
 
 		if(gotPoint){
-			double timePassed = (cycles + time/100000.0)/100;
-			data += (int)(0x0FFFFFFF*sin(time/(1000.0*(3+timePassed))));
+			data += (int)(0x0FFFFFFF*sin(time/3000.0));
 		}
 		Chip_I2S_Send(LPC_I2S, data);
 	}
@@ -348,10 +393,28 @@ int main(void) {
 	for (;;) {
 		//flash goal LED with RTC
 		int sec = Chip_RTC_GetTime(LPC_RTC, RTC_TIMETYPE_SECOND);
-		screen[goalX][goalY] = sec%2;
+		if(sec == 10 && !lostGame && !winGame){
+			lostGame = true;
+			for(int i = 0; i <= maxX; i++){
+				for(int j = 0; j <= maxY; j++){
+					screen[i][j]=frown[i][j];
+				}
+			}
+			DEBUGOUT("You lost the game. RIP\r");
+		}
+		if(points == 20 && !winGame){
+			winGame = true;
+			for(int i = 0; i <= maxX; i++){
+				for(int j = 0; j <= maxY; j++){
+					screen[i][j] = smile[i][j];
+				}
+			}
+			DEBUGOUT("You won the game!\r");
+		}
 		//Check to end celebration noise
-		if(gotPoint && sec > 3)
+		if(gotPoint && sec > 1)
 			gotPoint = false;
+
 
 		SendAudioData(sec);
 
