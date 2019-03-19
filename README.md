@@ -9,7 +9,7 @@
 The idea of the project is to connected a XboxOne controller to LPC4088 micro-controller and have it perform some task. The full project proposal can be viewed in [here](https://github.com/wltu/ECE153B-Project/blob/master/ECE153B_ProjectPropoal.pdf "Project Proposal").
 
 ##### Project Idea Update:
-Instead of using the Xbox One controller that have required information for communication that is not avaliable online without reverse enginnering along with difference strudture in USB communication, we have decided to use a mouse that has a simpler USB comminucation with the LPC board. In the process of working with the Xbox One controller, we learned a lot about the USB communication but is still not evnough to get the Xbox controller connection to function.
+Instead of using the Xbox One controller that have required information for communication that is not avaliable online without reverse enginnering along with difference structure in USB communication, we have decided to use a mouse that has a simpler USB comminucation with the LPC board. In the process of working with the Xbox One controller, we learned a lot about the USB communication but is still not evnough to get the Xbox controller connection to function.
 
 ##### Final Project Idea:
 The final project will consited of a game where the user controls a dot in the LED matrix and have to chase a randomly located target on the LED matrix. The LPC plays a sound using I2S everytime the player scores or press any mouse buttons.
