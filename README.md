@@ -32,10 +32,9 @@ This week we were successful in setting up the 8x8 LED screen using GPIO pins. T
 We have also began work to create a sound from the speaker when a mouse button is pressed. There is a sample project called periph_i2s that sends audio data from a computer through an audio cable to the LPC's speaker which we plan to mirror in order to create noise. One problem with this strategy is that we wish to create our own audio data rather than pulling it from a computer so we will have to understand how the data is formatted.  
 
 #### Week 4 (3/10 - 3/16):
-Outline:
-- I2S
-- Game logic
-- RTC
+This week we figured out how to send the audio data to the speaker. We used I2S (Inter IC Sound) to continuously send data. It turned out that the raw speaker data is equivalent to the position (voltage) of the speaker so we had to use some time counter to have a smooth signal in case an update did not come as fast or faster than expected. To get a sense a time, we used the count of the timer already used for the LED display as it counts extremely fast. Our preferred choice was RTC but since the fastest data available to us as developers seems to be seconds, we could not use RTC since the signals must have a much higher frequency. When merging this part of the project, we found the same issue as before for the LED display where the data could not update fast enough because other processes were slowing down the update loop. We then optimized the other processes including exchanging UART for printf statements. The sound was then smooth and we realized we could go back to the old strategy for the LED display of turning on one row at a time. For demonstration purposes, we added a unique sound to each of the mouse buttons.
+
+After getting all of the foundation set up, we began work on the game logic. We set up a goal LED pixel that the mouse must move the player LED pixel to to get a point. This goal pixel is always at least 2 pixels away in Manhattan distance. By using RTC, we created a temporary sound of one second after each point was claimed. We also used the RTC to create a game over condition by seeing if the user was unable to get the goal after 10 seconds. At this point the screen would change to a frown face and the game would be over. If the player manages to get 20 points, they satisfy the win condition and the screen is changed to a smile. The game can be reset to its initial state if the middle mouse button is pressed. Since most of these conditions are based on the mouse's input, the game is continuously updating based on the mouse data.
 
 #### Final Week:
 ##### Final Project Demo 
