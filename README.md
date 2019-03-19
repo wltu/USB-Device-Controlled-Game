@@ -1,4 +1,4 @@
-## ECE153B Project Page
+## USB Device Controlled Game
 
 
 ### Group Members:
@@ -12,7 +12,7 @@ The idea of the project is to connected a XboxOne controller to LPC4088 micro-co
 Instead of using the Xbox One controller that have required information for communication that is not avaliable online without reverse enginnering along with difference structure in USB communication, we have decided to use a mouse that has a simpler USB comminucation with the LPC board. In the process of working with the Xbox One controller, we learned a lot about the USB communication but is still not evnough to get the Xbox controller connection to function.
 
 ##### Final Project Idea:
-The final project will consited of a game where the user controls a dot in the LED matrix and have to chase a randomly located target on the LED matrix. The LPC plays a sound using I2S everytime the player scores or press any mouse buttons.
+The final project will consist of a game where the user controls a dot in the LED matrix and have to chase a randomly located target on the LED matrix. The LPC plays a sound using I2S everytime the player scores or press any mouse buttons.
 
 #### Week 1 (2/17 - 2/23):
 The information on the Configuration and Interface descriptor for the XboxOne controller was looked into. The information was modified into the code in attempts to connect the controller to the micro-controller. The 8x8 LED matrix is also purchased. 
@@ -33,10 +33,16 @@ We have also began work to create a sound from the speaker when a mouse button i
 
 #### Week 4 (3/10 - 3/16):
 Outline:
-I2S
-Game logic
-RTC
+- I2S
+- Game logic
+- RTC
 
 #### Final Week:
-[![DEMO](http://img.youtube.com/vi/n_6XO0G7D-Q/0.jpg)](http://www.youtube.com/watch?v=n_6XO0G7D-Q "ECE153B Final Demo")
+##### Final Project Demo 
+<p align="center">
+  <a href="http://www.youtube.com/watch?feature=player_embedded&v=n_6XO0G7D-Q
+  " target="_blank"><img src="http://img.youtube.com/vi/n_6XO0G7D-Q/0.jpg" 
+  alt="Final Project Demo" width="480" height="360" border="10" /></a>
+</p>
 
+As shown in the demo above, the project is a game where the player uses the mouse to control a dot on the LED matrix to chase after a target. A sound is made to notify the player whenever the target it hit and the player could also produce different frequencies of sound with the different mouse buttons. The final project consisted of the use of LPC 4088 board with the USB mouse driver, I2S, GPIO, and UART. The USB mouse driver is modifed used to set up communication protocols between the LPC 4088 board and the mouse. I2S is used to communicates with the onboard speaker by sending PCM audio data to the speaker. GPIO is used form the image on the LED matrix. UART is used to help communcatation between the USB mouse and the LPC 4088 board.
