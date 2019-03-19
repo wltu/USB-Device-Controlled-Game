@@ -167,9 +167,14 @@ void TIMER0_IRQHandler(void)
 
 void RespawnGoal(){
 	do{
+		//random location
 		goalX = rand() % (maxX + 1);
 		goalY = rand() % (maxY + 1);
-	}while(fabs(goalX-(int)cx) < 2 && goalY == (int)cy);
+
+		// Make sure the goal is at least 2 pixels away  in Manhattan distance
+	}while(fabs(goalX - (int)cx) + fabs(goalY - (int)cy) < 2);
+
+	// Turn on goal location
 	screen[goalX][goalY] = 1;
 }
 
@@ -328,22 +333,25 @@ void SendAudioData(int rtcSec){
 	if ((Chip_I2S_GetTxLevel(LPC_I2S) < 4)) {
 
 		int time = Chip_TIMER_ReadCount(LPC_TIMER0);
+		// Multiply by 2*pi to make full sound waves
+		time = (int)(time*2*3.14159);
 		// Sound data is the position (voltage) of the speaker
 		int data = 0;
 
 		// Add up various frequencies
 		// Note: Data is used as 2's complement, make sure that the value does not get so large that it becomes negative
+		// Divisors must be factors of 100,000 to sound smooth since counter has a max of 100,000 and resets to 0
 		if((buttons & LEFT_BUTTON) != 0)
-			data += (int)(0x0FFFFFFF*sin(time/6000.0));
+			data += (int)(0x05FFFFFF*sin(time/10000.0));
 		if((buttons & RIGHT_BUTTON) != 0)
-			data += (int)(0x0FFFFFFF*sin(time/5000.0));
+			data += (int)(0x0FFFFFFF*sin(time/25000.0));
 		if((buttons & MIDDLE_BUTTON) != 0){
-			data += (int)(0x0FFFFFFF*sin(time/4000.0));
+			data += (int)(0x0FFFFFFF*sin(time/20000.0));
 		}
 
 		// Temporary celebration noise for getting a point
 		if(gotPoint){
-			data += (int)(0x0FFFFFFF*sin(time/3000.0));
+			data += (int)(0x08FFFFFF*sin(time/12500.0));
 		}
 
 		// Send the data to the speaker
